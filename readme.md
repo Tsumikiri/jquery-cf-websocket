@@ -13,7 +13,7 @@ $.ws.config.messageDefaults.appName = 'MyApplicationName';
 
 Create a new WebSocket connection with `$.ws()`. You can pass in one or more ColdFusion WebSocket channel names to subscribe to initially, plus a data handler that is fired for data messages only.
 ```javascript
-$.ws('mychannel', function(event, data) {
+$.ws('mychannel,myotherchannel', function(event, data) {
     console.log(data);
 });
 ```
