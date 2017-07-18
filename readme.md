@@ -5,6 +5,12 @@ A wrapper for websockets meant to replace ColdFusion's client-side websocket sol
 To install jQuery CF WebSocket for your site, just include the minified JavaScript file on any page that needs it. The minified JavaScript (see the 'jquery.cf-websocket.min.js' file) is written for the ES5 standard for browser compatibility.
 
 ## Usage
+Configure the plugin for your site. Give the plugin the URL of your ColdFusion websocket endpoint as well as your application name.
+```javascript
+$.ws.config.url = 'ws://localhost:8579/cfusion';
+$.ws.config.messageDefaults.appName = 'MyApplicationName';
+```
+
 Create a new WebSocket connection with `$.ws()`. You can pass in one or more ColdFusion WebSocket channel names to subscribe to initially, plus a data handler that is fired for data messages only.
 ```javascript
 $.ws('mychannel', function(event, data) {
