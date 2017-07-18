@@ -56,4 +56,4 @@ To start modifying this plugin, you should install [npm](https://www.npmjs.com/)
 The source for this plugin is in the 'jquery.cf-websocket.jsx' file, which is written in the ES6 standard. To transpile it to browser-safe ES5 (see the 'jquery.cf-websocket.min.js' file), run the build command with `npm run build`. This also minifies the file.
 
 ### Generating Documentation
-Use `npm run jsdoc` to generate documentation for this project.
+Use `npm run jsdoc` to generate documentation for this project. This will generate two sets of documentation, one that shows the public interface only and another that shows private items as well.
