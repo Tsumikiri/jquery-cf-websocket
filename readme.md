@@ -52,6 +52,39 @@ ws.onopen = function() {
 }
 ```
 
+## Migrating from <cfwebsocket>
+```coldfusion
+<cfwebsocket name="ws" onopen="openHandler" onmessage="messageHandler" onclose="closeHandler" subscribeto="mychannel" />
+<script>
+    function openHandler() {
+        /* 1 */
+    }
+    function messageHandler(message) {
+        if (data.reqType === 'welcome') {
+            /* 2 */
+        } else if (!data.reqType) {
+            /* 3 */
+        }
+    }
+    function closeHandler() {
+        /* 4 */
+    }
+</script>
+```
+```html
+<script>
+    var ws = $.ws('mychannel').on('open', function() {
+        /* 1 */
+    }).on('welcome', function(event, message) {
+        /* 2 */
+    }).on('data', function(event, data, message) {
+        /* 3 */
+    }).on('close', function() {
+        /* 4 */
+    });
+</script>
+```
+
 ## Developer Environment
 To start modifying this plugin, you should install [npm](https://www.npmjs.com/). Navigate to the project root and run `npm install` to install the plugin's developer dependencies. These include [jsdoc](http://usejsdoc.org/) for documentation and [babel](https://babeljs.io/) for transpilation and minification.
 
