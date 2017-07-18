@@ -1,0 +1,14 @@
+{
+  "name": "jquery-cf-websocket",
+  "version": "1.3.0",
+  "scripts": {
+    "build": "babel jquery.cf-websocket.jsx --no-comments --compact=true --minified --presets=es2015,babili --no-babelrc --out-file jquery.cf-websocket.min.js",
+    "jsdoc": "jsdoc -c jsdoc/config.json -d jsdoc/out jquery.cf-websocket.jsx & jsdoc -c jsdoc/config-all.json -d jsdoc/out-all -a all jquery.cf-websocket.jsx"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.1",
+    "babel-preset-es2015": "^6.24.1",
+    "babili": "^0.1.4",
+    "jsdoc": "^3.5.3"
+  }
+}
