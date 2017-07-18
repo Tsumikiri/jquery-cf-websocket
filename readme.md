@@ -30,7 +30,7 @@ $.ws(/* ... */).on('open', function() {
 });
 ```
 
-Call functions from the [ColdFusion client-side websocket documentation](https://helpx.adobe.com/coldfusion/developing-applications/coldfusion-and-html-5/using-coldfusion-websocket/using-websocket-to-broadcast-messages.html#UsingtheWebSocketJavaScriptfunctions).
+Call functions from the [ColdFusion client-side websocket documentation](https://helpx.adobe.com/coldfusion/developing-applications/coldfusion-and-html-5/using-coldfusion-websocket/using-websocket-to-broadcast-messages.html#UsingtheWebSocketJavaScriptfunctions). This means that complicated code that relied on these functions can be seemlessly migrated to using this plugin.
 ```javascript
 var ws = $.ws(/* ... */).on('open', function() {
     if (ws.isConnectionOpen()) {
@@ -42,7 +42,7 @@ var ws = $.ws(/* ... */).on('open', function() {
 });
 ```
 
-Use functions and properties from the [JavaScript WebSockets documentation](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket).
+Use functions and properties from the [JavaScript WebSockets documentation](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket). This is preferred over using the ColdFusion-like interface for methods that manage the connection like `isConnectionOpen` and `closeConnection`.
 ```javascript
 var ws = $.ws(/* ... */);
 ws.onopen = function() {
