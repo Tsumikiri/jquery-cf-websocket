@@ -52,7 +52,7 @@ ws.onopen = function() {
 }
 ```
 
-## Migrating from <cfwebsocket>
+## Migrating from cfwebsocket
 ```coldfusion
 <cfwebsocket name="ws" onopen="openHandler" onmessage="messageHandler" onclose="closeHandler" subscribeto="mychannel" />
 <script>
