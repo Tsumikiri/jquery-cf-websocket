@@ -53,6 +53,11 @@ ws.onopen = function() {
 ```
 
 ## Migrating from cfwebsocket
+To migrate from using the cfwebsocket tag, replace the tag with a call to `$.ws()` and add each handler to it using the `on()` method. This way you don't create a bunch of functions in the global namespace. You can still refer to the websocket object in javascript the same way by assigning to the return of the `$.ws()` function.
+
+The plugin will even take care of handling different kinds of messages for you by providing different event names for welcome, subscribe, and data. To use one handler for all of these, use the message event.
+
+### Old Code
 ```coldfusion
 <cfwebsocket name="ws" onopen="openHandler" onmessage="messageHandler" onclose="closeHandler" subscribeto="mychannel" />
 <script>
@@ -62,25 +67,31 @@ ws.onopen = function() {
     function messageHandler(message) {
         if (data.reqType === 'welcome') {
             /* 2 */
-        } else if (!data.reqType) {
+        } else if (data.reqType === 'subscribeTo') {
             /* 3 */
+        } else if (!data.reqType) {
+            /* 4 */
         }
     }
     function closeHandler() {
-        /* 4 */
+        /* 5 */
     }
 </script>
 ```
+
+### New Code
 ```html
 <script>
     var ws = $.ws('mychannel').on('open', function() {
         /* 1 */
     }).on('welcome', function(event, message) {
         /* 2 */
-    }).on('data', function(event, data, message) {
+    }).on('subscribe', function(event, message) {
         /* 3 */
-    }).on('close', function() {
+    }).on('data', function(event, data, message) {
         /* 4 */
+    }).on('close', function() {
+        /* 5 */
     });
 </script>
 ```
