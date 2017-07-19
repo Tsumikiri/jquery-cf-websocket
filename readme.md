@@ -87,7 +87,7 @@ Here we create a global `ws` variable to hold our websocket object, plus three g
 ```
 
 ### New Code
-With jQuery CF WebSockets, we assign our created websocket to a `ws` variable, which we can put wherever we need it in our code. Event handlers are attached with a familiar `on()` interface, and message events are split up so you don't have to write your own message-distinguishing logic. If you need a handler that fires on all types of messages, there is a "message" event for that.
+With jQuery CF WebSockets, we assign our created websocket to a `ws` variable. Notice that we can create it in any scope, such as in a callback. Event handlers are attached with a familiar `on()` interface, and message events are split up so you don't have to write your own message-distinguishing logic. If you need a handler that fires on all types of messages, there is a "message" event for that.
 ```html
 <script>
     var ws = $.ws('mychannel').on('open', function(event, message) {
