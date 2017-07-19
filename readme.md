@@ -27,7 +27,7 @@ $.ws('mychannel,myotherchannel', function(event, data) {
 ```
 
 ### Events
-Attach event handlers with a familiar jQuery interface. Events include open, subscribe, welcome, data, close, and error.
+Attach event handlers with a familiar jQuery interface. Events include "open", "subscribe", "welcome", "data", "unsubscribe", "close", and "error". There is also a "message" event that is fired whenever "subscribe", "welcome", "data", or "unsubscribe" is fired.
 ```javascript
 $.ws(/* ... */).on('open', function() {
     console.log('Hello, world!');
