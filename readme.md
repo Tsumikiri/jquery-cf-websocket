@@ -63,7 +63,7 @@ ws.onopen = function() {
 ## Migrating from cfwebsocket
 To migrate from using the cfwebsocket tag, replace the tag with a call to `$.ws()` and add each handler to it using the `on()` method. This way you don't create a bunch of functions in the global namespace.
 
-The cfwebsocket tag adds over 100kb of JavaScript to your page from importing ColdFusion's JavaScript files, whereas the jQuery CF WebSocket plugin adds just 4kb of JavaScript to your page (provided that you were already using jQuery).
+The cfwebsocket tag adds over 100kb of JavaScript to your page from importing ColdFusion's JavaScript files, whereas the jQuery CF WebSocket plugin adds under 8kb of JavaScript to your page (provided that you were already using jQuery).
 
 ### Old Code
 Here we create a global `ws` variable to hold our websocket object, plus three global functions for handling events. Additionally, the message handler has to be set up to distinguish between different kinds of events.
