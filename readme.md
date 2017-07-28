@@ -37,7 +37,7 @@ $.ws(/* ... */).on('open', function() {
 ```
 
 ### ColdFusion WebSocket Compatibility
-Call functions from the [ColdFusion client-side websocket documentation](https://helpx.adobe.com/coldfusion/developing-applications/coldfusion-and-html-5/using-coldfusion-websocket/using-websocket-to-broadcast-messages.html#UsingtheWebSocketJavaScriptfunctions). This means that complicated code that relied on these functions can be seemlessly migrated to using this plugin.
+This plugin supports the interface detailed in the [ColdFusion client-side websocket documentation](https://helpx.adobe.com/coldfusion/developing-applications/coldfusion-and-html-5/using-coldfusion-websocket/using-websocket-to-broadcast-messages.html#UsingtheWebSocketJavaScriptfunctions). This means that complicated code that relied on these functions can be seemlessly migrated to using this plugin.
 ```javascript
 var ws = $.ws(/* ... */).on('open', function() {
     if (ws.isConnectionOpen()) {
@@ -50,7 +50,7 @@ var ws = $.ws(/* ... */).on('open', function() {
 ```
 
 ### JavaScript WebSocket Compatibility
-Use functions and properties from the [JavaScript WebSockets documentation](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket). This is preferred over using the ColdFusion-like interface for methods that manage the connection like `isConnectionOpen` and `closeConnection`.
+This plugin supports the interface detailed in the [JavaScript WebSockets documentation](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket). This is preferred over using the ColdFusion-like interface for methods that manage the connection like `isConnectionOpen` and `closeConnection`.
 ```javascript
 var ws = $.ws(/* ... */);
 ws.onopen = function() {
@@ -63,6 +63,8 @@ ws.onopen = function() {
 ## Migrating from cfwebsocket
 To migrate from using the cfwebsocket tag, replace the tag with a call to `$.ws()` and add each handler to it using the `on()` method. This way you don't create a bunch of functions in the global namespace.
 
+The cfwebsocket tag adds over 100kb of JavaScript to your page from importing ColdFusion's JavaScript files, whereas the jQuery CF WebSocket plugin adds just 4kb of JavaScript to your page (provided that you were already using jQuery).
+
 ### Old Code
 Here we create a global `ws` variable to hold our websocket object, plus three global functions for handling events. Additionally, the message handler has to be set up to distinguish between different kinds of events.
 ```coldfusion
@@ -72,11 +74,11 @@ Here we create a global `ws` variable to hold our websocket object, plus three g
         /* 1 */
     }
     function messageHandler(message) {
-        if (data.reqType === 'welcome') {
+        if (message.reqType === 'welcome') {
             /* 2 */
-        } else if (data.reqType === 'subscribeTo') {
+        } else if (message.reqType === 'subscribeTo') {
             /* 3 */
-        } else if (!data.reqType) {
+        } else if (!message.reqType) {
             /* 4 */
         }
     }

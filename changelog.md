@@ -33,3 +33,39 @@
 - JSDoc generation is now included as a script in package.json
     + To generate documentation, use `npm run jsdoc`
 - Public JSDoc no longer includes source links
+
+## 1.3.1
+- Errors are now defined as codes not equal to 0 (was codes less than 0)
+
+## 1.3.2
+- Message data is now automatically parsed as JSON (if the data is not valid JSON, it is passed as-is and no error is thrown)
+
+## 1.3.3
+- Handlers added for the open/close event will now fire immediately if the WebSocket has already beened opened/closed
+
+## 1.4.0
+- Removed the multiple handler initializer
+- The initializer can now take `customOptions` to be passed to the server when initially subscribing to channels (channels subscribed to with the `subscribe` method will not use the customOptions passed to the initializer)
+
+## 1.5.0
+- Added the `one` method
+- Added the `callback` parameter to the `authenticate` method
+- Changed how callbacks are handled for the `authenticate`, `subscribe`, `getSubscriberCount`, and `getSubscriptions` methods
+    + When calling a method multiple times, callbacks are queued
+    + Callbacks are now executed only once and then removed
+
+## 1.5.1
+- Fixed a bug that prevented open/close events from firing when added to a WebSocket that is already opened/closed
+- Added the `channel` parameter to the `on` method
+- An undefined code is no longer treated as an error
+
+## 1.5.2
+- Fixed a bug that caused JSON data messages to be parsed twice (resulting in an error)
+
+## 1.5.3
+- The publish function now converts data to a string (using `JSON.stringify`) before sending it to the server
+    + Data that is already a string or that cannot be stringified is passed as-is
+    + This change prevents ColdFusion from getting its grubby hands in our data
+
+## 1.5.4
+- Fixed a bug that sometimes caused the wrong event handler to be fired when adding an open or close handler to an already opened or closed websocket

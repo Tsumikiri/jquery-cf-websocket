@@ -1,7 +1,7 @@
 /**
  * @file A jQuery wrapper for ColdFusion websockets. The plugin function is {@link jQuery.ws}. The configuration object is {@link jQuery.ws.config}. This plugin is written in ES6, but the package includes a build command that transpiles (and minifies) it to ES5 using {@link https://babeljs.io/|Babel}.
  * @author afurey
- * @version 1.3.0
+ * @version 1.5.4
  * @see {@link jQuery.ws}
  *
  * @example <caption>Configuring the plugin.</caption>
@@ -71,11 +71,13 @@
 	 * @property {!object} messageDefaults.customOptions - Custom options to pass to the server with every message
 	 */
 	let config = {
-		url: 'ws://localhost:8579/cfusion',
+		url: (window.location.protocol === 'https' ? 'wss://' : 'ws://') + window.location.hostname + (window.location.hostname === 'madrid.truth.com' ? ':8579/cfusion/cfusion' : '/cfws'),
 		messageDefaults: {
 			ns: 'coldfusion.websocket.channels',
-			appName: 'MyApplicationName',
-			customOptions: {}
+			appName: 'ATApps' + (window.location.hostname === 'testapps.amesburytruth.com' ? 'Test' : ''),
+			customOptions: {
+				authKey: Cookies.get('authkey')
+			}
 		}
 	};
 
@@ -85,15 +87,17 @@
 	 * @summary A WebSocket wrapper meant to be used with ColdFusion.
 	 * @description This wrapper implements interfaces for both the standard JavaScript {@link WebSocket} and ColdFusion's WebSocket object (created by the <code>cfwebsocket</code> tag). Supports chaining by returning the called object with each method. Includes an {@link CFWebSocket.CFWebSocket#on|on} method that provides a familiar event-attachment interface.
 	 * @param {!string} url - The url to connect to.
-	 * @param {(string|object<string,DataEventListener>)} [channels] - One or more channels to subscribe to whenever the connection opens. Specify multiple channels with a comma-delimited string. You can also specify channels as an object whose keys are channel names and values are {@link DataEventListener}s. Channels (and data listeners) can also be added with the {@link CFWebSocket.CFWebSocket#subscribe|subscribe} method. DataEventListeners can also be added with the {@link CFWebSocket.CFWebSocket#on|on} method by using the <code>data</code> event.
+	 * @param {!(string|object<string,DataEventListener>)} [channels] - One or more channels to subscribe to whenever the connection opens. Specify multiple channels with a comma-delimited string. You can also specify channels as an object whose keys are channel names and values are {@link DataEventListener}s. Channels (and data listeners) can also be added with the {@link CFWebSocket.CFWebSocket#subscribe|subscribe} method. DataEventListeners can also be added with the {@link CFWebSocket.CFWebSocket#on|on} method by using the <code>data</code> event.
 	 * @param {!string|array<string>} [protocol] - A protocol string or array of protocol strings. See {@link WebSocket}.
+	 * @param {!object} [customOptions] - Custom options to pass to the server when subscribing to the channels supplied as the channels argument. These options will only be used for the initial subscribe request.
 	 */
 	class CFWebSocket {
-		constructor(url, channels, protocol) {
+		constructor(url, channels, protocol, customOptions) {
 			let complexChannels = (typeof channels === 'object' && channels.constructor === Object);
 			this.channelHandlers = (complexChannels ? channels : {});
 			this.eventHandlers = {};
-			this.w = this.i(url, complexChannels ? Object.keys(channels).join(',') : channels)
+			this.oneHandlers = {};
+			this.w = this.i(url, complexChannels ? Object.keys(channels).join(',') : channels, customOptions);
 		}
 
 		/**
@@ -212,29 +216,56 @@
 
 		/**
 		 * @private
+		 * @method CFWebSocket.CFWebSocket#c
+		 * @summary A private method used internally.
+		 * @description If the event is open or closed and the websocket is in the corresponding state: if a handler is given, calls the given handler; otherwise, fires and removes the last-added one-time handler for the given event.
+		 * @param {!string} event
+		 * @param {!EventListener} [handler]
+		 */
+		c(event, handler) {
+			var args = (event === 'open' && this.readyState === WebSocket.OPEN ? this.o : (event === 'close' && this.readyState === WebSocket.CLOSED ? this.c : undefined));
+			if (args) {
+				if (handler) {
+					handler.apply(this, args);
+				} else {
+					this.oneHandlers[event].pop().apply(this, args);
+				}
+			}
+		}
+
+		/**
+		 * @private
 		 * @method CFWebSocket.CFWebSocket#i
 		 * @summary A private method used internally.
 		 * @description Creates a new JavaScript WebSocket object and attaches special event handlers used to fire CFWebSocket events.
-		 * @param {!string} channels - Channel to initially subscribe to. Use a comma-delimited list for multiple channels.
+		 * @param {!string} subscribeTo - Channel to initially subscribe to. Use a comma-delimited list for multiple channels.
 		 * @return {WebSocket}
 		 */
-		i(url, channels) {
+		i(url, subscribeTo, customOptions) {
 			let ws = new WebSocket(url);
-			ws.onopen = () => {
+			ws.onopen = (event) => { //note: arrow functions use a fixed this based on the context it in which they were defined
 				this.s('welcome', undefined, undefined, {
-					subscribeTo: channels
+					subscribeTo,
+					customOptions
 				});
+				this.o = arguments;
 				this.f('open', arguments);
 			};
-			ws.onclose = () => {
+			ws.onclose = (event) => {
+				this.c = arguments;
 				this.f('close', arguments);
 			};
 			ws.onmessage = event => {
 				let message = event.data ? JSON.parse(event.data) : {};
-				if (message.code < 0) {
+				if (message.data) {
+					try {
+						message.data = JSON.parse(message.data);
+					} catch (e) {}
+				}
+				if (message.code) { //non-zero non-undefined codes are errors
 					this.f('error', [event, message]);
 				} else if (message.type === 'data') {
-					this.f('data', (message.channelname && message.channelname in this.channelHandlers ? message.channelname : undefined), [event, ('data' in message && message.data ? JSON.parse(message.data) : {}), message]);
+					this.f('data', (message.channelname && message.channelname in this.channelHandlers ? message.channelname : undefined), [event, ('data' in message && message.data ? message.data : {}), message]);
 				} else if (message.reqType === 'subscribeTo') {
 					if (message.channelssubscribedto) {
 						this.f('subscribe', [event, message]);
@@ -258,7 +289,7 @@
 		 * @private
 		 * @method CFWebSocket.CFWebSocket#f
 		 * @summary A private method used internally.
-		 * @description Runs an event handler.
+		 * @description Runs the most appropriate event handler. Will only run one handler at the most. Precedence is channel-specific handlers, one-time handlers, all other handlers. One-time handlers will be removed after firing.
 		 * @param {!string} name - The name of the event
 		 * @param {!string} [channel] - The name of the channel, if applicable
 		 * @param {!array} args - Arguments to pass to the handler
@@ -270,6 +301,8 @@
 			}
 			if (channel && name === 'data') {
 				this.channelHandlers[channel].apply(this, args);
+			} else if (name in this.oneHandlers && this.oneHandlers[name].length > 0) {
+				this.oneHandlers[name].shift().apply(this, args);
 			} else if (name in this.eventHandlers) {
 				this.eventHandlers[name].apply(this, args);
 			}
@@ -282,14 +315,14 @@
 		 * @description Sends a ColdFusion websocket control message.
 		 * @param {!string} type - The type of message
 		 * @param {!string} [channel] - The channel
-		 * @param {!object} [data] - Custom options
+		 * @param {!object} [customOptions] - Extra custom options to send
 		 * @param {!object} [extras] - Extra parameters to send
 		 */
-		s(type, channel, data, extras) {
+		s(type, channel, customOptions, extras) {
 			this.w.send(JSON.stringify($.extend(true, {}, config.messageDefaults, {
 				type,
 				channel,
-				customOptions: data
+				customOptions
 			}, extras)));
 		}
 		
@@ -342,7 +375,7 @@
 		getSubscriberCount(channel, callback) {
 			this.s('getSubscriberCount', channel);
 			if (callback) {
-				this.eventHandlers.getSubscriberCount = callback;
+				this.one('getSubscriberCount', callback);
 			}
 			return this;
 		}
@@ -358,7 +391,7 @@
 		getSubscriptions(callback) {
 			this.s('getSubscriptions');
 			if (callback) {
-				this.eventHandlers.getSubscriptions = callback;
+				this.one('getSubscriptions', callback);
 			}
 			return this;
 		}
@@ -445,8 +478,11 @@
 		 * @returns {CFWebSocket.CFWebSocket}
 		 */
 		publish(channel, data, options) {
+			try {
+				data = JSON.stringify(data);
+			} catch (e) {}
 			this.s('publish', channel, options, {
-				data: data
+				data
 			});
 			return this;
 		}
@@ -455,15 +491,23 @@
 		 * @public
 		 * @method CFWebSocket.CFWebSocket#authenticate
 		 * @summary Included for compatibility with ColdFusion WebSockets.
-		 * @description Sends an authentication message to the ColdFusion server. This will trigger your ColdFusion application's {@link https://helpx.adobe.com/coldfusion/cfml-reference/coldfusion-functions/functions-m-r/onwsauthenticate.html|onWSAuthenticate} callback.
-		 * @param  {!string} username
-		 * @param  {!string} password
+		 * @description Sends an authentication message to the ColdFusion server. This will trigger your ColdFusion application's {@link https://helpx.adobe.com/coldfusion/cfml-reference/coldfusion-functions/functions-m-r/onwsauthenticate.html|onWSAuthenticate} callback. Note that you could send data other than an actual username/password (e.g. an auth key) and configure your onWSAuthenticate function to handle it.
+		 * @param {!string} username - A username to supply to the server
+		 * @param {!string} password - A password to supply to the server
+		 * @param {EventListener} callback - A callback to run when the authentication confirmation message is received
+		 * @returns {CFWebSocket.CFWebSocket}
+		 *
+		 * @example
+		 * $.ws().authenticate('foo', 'bar').subscribe('mychannel');
 		 */
-		authenticate(username, password) {
+		authenticate(username, password, callback) {
 			this.s('authenticate', undefined, undefined, {
-				username: username,
-				password: password
+				username,
+				password
 			});
+			if (callback) {
+				this.one('authenticate', callback);
+			}
 			return this;
 		}
 
@@ -472,7 +516,8 @@
 		 * @method CFWebSocket.CFWebSocket#on
 		 * @summary Provides a familiar event-attachment interface.
 		 * @description Sets an event handler for the CFWebSocket. Each event can have only one handler. Adding a second handler to an event that already has one overwrites the original handler.
-		 * @param {!string} event - Supported events: open, subscribe, welcome, data, unsubscribe, close, error. Using any other event names results in undefined behavior.
+		 * @param {!string} event - Supported events: open, subscribe, welcome, data, unsubscribe, close, error. Using any other event names results in undefined behavior. Adding an open or close event handler after the connection has already been opened will immediately fire the newly-added handler.
+		 * @param {!string} [channel] - Specify a channel. Only works with the data event.
 		 * @param {!(MessageEventListener|DataEventListener)} handler - The callback to use for the event
 		 * @returns {CFWebSocket.CFWebSocket}
 		 * 
@@ -481,8 +526,32 @@
 		 *     console.log('Connected!');
 		 * });
 		 */
-		on(event, handler) {
-			this.eventHandlers[event] = handler;
+		on(event, ...args) {
+			if (event === 'data' && args.length > 1) {
+				this.channelHandlers[args[0]] = args[1];
+			} else if (args.length > 0) {
+				this.eventHandlers[event] = args[args.length - 1];
+			}
+			this.c(event, args[args.length - 1]);
+			return this;
+		}
+
+		/**
+		 * @public
+		 * @method CFWebSocket.CFWebSocket#one
+		 * @summary Provides a familiar event-attachment interface.
+		 * @description Adds a one-time event handler for the CFWebSocket. Each event can have multiple handlers. Only one handler runs for each firing of an event, event if there are multiple handlers. One-time handlers take precedence over regular handlers.
+		 * @param {!string} event - Supported events: open, subscribe, welcome, data, unsubscribe, close, error. Using any other event names results in undefined behavior. Adding an open or close event handler after the connection has already been opened will immediately fire the newly-added handler.
+		 * @param {!(MessageEventListener|DataEventListener)} handler - The callback to use for the event
+		 * @return {CFWebSocket.CFWebSocket}
+		 */
+		one(event, handler) {
+			if (this.oneHandlers[event]) {
+				this.oneHandlers[event].push(handler);
+			} else {
+				this.oneHandlers[event] = [handler];
+			}
+			this.c(event);
 			return this;
 		}
 
@@ -496,7 +565,8 @@
 	 * @function jQuery.ws
 	 * @description Creates a CFWebSocket object, which is a wrapper for JavaScript's own {@link WebSocket} object with added methods for use with ColdFusion's websocket channels.
 	 * @param {string|object<string,DataEventListener>} [channels] - Channel(s) to initially subscribe to. For multiple channels use a comma-delimited list. Use an object whose keys are channels and values are DataEventListeners to specify a separate data listener for each channel.
-	 * @param {(DataEventListener|object<string,EventListener>)} [dataHandler] - Either a handler to use for incoming data messages or an object whose keys are vailid events (open, subscribe, welcome, data, unsubscribe, close, error) and values are EventListeners for those events.
+	 * @param {object} [customOptions] - Custom options to pass when performing the initial channel subscriptions.
+	 * @param {DataEventListener} [dataHandler] - Either a handler to use for incoming data messages.
 	 * @returns {CFWebSocket.CFWebSocket}
 	 *
 	 * @example <caption>The below examples connects to <code>mychannel</code> and logs any incoming data messages.</caption>
@@ -509,21 +579,8 @@
 	 *     console.log(data);
 	 * });
 	 *
-	 * @example <caption>This example shows how you can set multiple event handlers at initialization. Alternatively, you could use the {@link CFWebSocket.CFWebSocket#on} method.</caption>
-	 * $.ws('mychannel', {
-	 *     open: function(event, message) {
-	 *         console.log('Connected!');
-	 *     }
-	 *     data: function(event, data, message) {
-	 *         console.log(data);
-	 *     },
-	 *     close: function(event, message) {
-	 *         console.log('Disconnected!');
-	 *     }
-	 * });
-	 *
 	 * @example <caption>Setting a unique data handler for each channel. Here we subscribe to <code>channel1</code> and <code>channel2</code>.</caption>
-	 * $.ws({
+	 * $.ws('channel1,channel2', {
 	 *     channel1: function(event, data, message) {
 	 *         console.log(1);
 	 *     },
@@ -532,17 +589,24 @@
 	 *     }
 	 * });
 	 *
+	 * @example <caption>Passing custom data on the initial channel subscription.</caption>
+	 * $.ws('mychannel', {
+	 * 	   recordId: 42,
+	 *     authKey: 'blahblahblahsecurekey'
+	 * }, function(event, data, message) {
+	 *     //...
+	 * });
+	 *
 	 * @example <caption>You can also save a reference to the CFWebSocket object. This can be useful if you want to be able to add/remove channels, publish on the channel, or send data. Warning: make sure you wait until the WebSocket is connected before trying to use it this way.</caption>
 	 * var myWebSocket = $.ws(...);
 	 * ...
 	 * myWebSocket.publish('somechannel', { message: 'Hello, World!' });
 	 */
-	$.ws = (channels, arg) => {
-		let ws = new CFWebSocket($.ws.config.url, channels);
-		if ($.isPlainObject(arg)) {
-			ws.eventHandlers = arg;
-		} else if (typeof arg === 'function') {
-			ws.eventHandlers.data = arg;
+	$.ws = (channels, ...args) => {
+		let hasFunc = (typeof args[0] === 'function');
+		let ws = new CFWebSocket($.ws.config.url, channels, undefined, hasFunc ? args[1] : args[0]);
+		if (hasFunc) {
+			ws.eventHandlers.data = args[0];
 		}
 		return ws;
 	};
