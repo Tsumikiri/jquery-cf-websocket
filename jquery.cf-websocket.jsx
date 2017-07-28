@@ -71,13 +71,11 @@
 	 * @property {!object} messageDefaults.customOptions - Custom options to pass to the server with every message
 	 */
 	let config = {
-		url: (window.location.protocol === 'https' ? 'wss://' : 'ws://') + window.location.hostname + (window.location.hostname === 'madrid.truth.com' ? ':8579/cfusion/cfusion' : '/cfws'),
+		url: (window.location.protocol === 'https' ? 'wss://' : 'ws://') + window.location.hostname + ':8579/cfusion/cfusion',
 		messageDefaults: {
 			ns: 'coldfusion.websocket.channels',
-			appName: 'ATApps' + (window.location.hostname === 'testapps.amesburytruth.com' ? 'Test' : ''),
-			customOptions: {
-				authKey: Cookies.get('authkey')
-			}
+			appName: '',
+			customOptions: {}
 		}
 	};
 
