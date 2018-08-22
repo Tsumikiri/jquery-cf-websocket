@@ -4,6 +4,50 @@ A wrapper for websockets meant to replace ColdFusion's client-side websocket sol
 ## Site Installation
 To install jQuery CF WebSocket for your site, just include the minified JavaScript file on any page that needs it. The minified JavaScript (see the 'jquery.cf-websocket.min.js' file) is written for the ES5 standard for browser compatibility.
 
+## Migrating from cfwebsocket
+To migrate from using the cfwebsocket tag, replace the tag with a call to `$.ws()` and add each handler to it using the `on()` method. This way you don't create a bunch of functions in the global namespace.
+
+The cfwebsocket tag adds over 100kb of JavaScript to your page from importing ColdFusion's JavaScript files, whereas the jQuery CF WebSocket plugin adds under 8kb of JavaScript to your page (provided that you were already using jQuery).
+
+### Old Code
+Here we create a global `ws` variable to hold our websocket object, plus three global functions for handling events. Additionally, the message handler has to be set up to distinguish between different kinds of events.
+```coldfusion
+<cfwebsocket name="ws" onopen="openHandler" onmessage="messageHandler" onclose="closeHandler" subscribeto="mychannel" />
+<script>
+    function openHandler() {
+        /* 1 */
+    }
+    function messageHandler(message) {
+        if (message.reqType === 'welcome') {
+            /* 2 */
+        } else if (message.reqType === 'subscribeTo') {
+            /* 3 */
+        } else if (!message.reqType) {
+            /* 4 */
+        }
+    }
+    function closeHandler() {
+        /* 5 */
+    }
+</script>
+```
+
+### New Code
+With jQuery CF WebSockets, we assign our created websocket to a `ws` variable. We can use this variable to perform all of the methods we could with ColdFusion's websocket object, such as `ws.subscribe()` and `ws.publish()`. Event handlers are attached with a familiar `on()` interface, and message events are split up so you don't have to write your own message-distinguishing logic. If you need a handler that fires on all types of messages, there is a "message" event for that.
+```javascript
+var ws = $.ws('mychannel').on('open', function(event, message) {
+    /* 1 */
+}).on('welcome', function(event, message) {
+    /* 2 */
+}).on('subscribe', function(event, message) {
+    /* 3 */
+}).on('data', function(event, data, message) {
+    /* 4 */
+}).on('close', function(event, message) {
+    /* 5 */
+});
+```
+
 ## Usage
 
 ### Configuration
@@ -58,52 +102,6 @@ ws.onopen = function() {
         ws.close();
     }
 }
-```
-
-## Migrating from cfwebsocket
-To migrate from using the cfwebsocket tag, replace the tag with a call to `$.ws()` and add each handler to it using the `on()` method. This way you don't create a bunch of functions in the global namespace.
-
-The cfwebsocket tag adds over 100kb of JavaScript to your page from importing ColdFusion's JavaScript files, whereas the jQuery CF WebSocket plugin adds under 8kb of JavaScript to your page (provided that you were already using jQuery).
-
-### Old Code
-Here we create a global `ws` variable to hold our websocket object, plus three global functions for handling events. Additionally, the message handler has to be set up to distinguish between different kinds of events.
-```coldfusion
-<cfwebsocket name="ws" onopen="openHandler" onmessage="messageHandler" onclose="closeHandler" subscribeto="mychannel" />
-<script>
-    function openHandler() {
-        /* 1 */
-    }
-    function messageHandler(message) {
-        if (message.reqType === 'welcome') {
-            /* 2 */
-        } else if (message.reqType === 'subscribeTo') {
-            /* 3 */
-        } else if (!message.reqType) {
-            /* 4 */
-        }
-    }
-    function closeHandler() {
-        /* 5 */
-    }
-</script>
-```
-
-### New Code
-With jQuery CF WebSockets, we assign our created websocket to a `ws` variable. We can use this variable to perform all of the methods we could with ColdFusion's websocket object, such as `ws.subscribe()` and `ws.publish()`. Event handlers are attached with a familiar `on()` interface, and message events are split up so you don't have to write your own message-distinguishing logic. If you need a handler that fires on all types of messages, there is a "message" event for that.
-```html
-<script>
-    var ws = $.ws('mychannel').on('open', function(event, message) {
-        /* 1 */
-    }).on('welcome', function(event, message) {
-        /* 2 */
-    }).on('subscribe', function(event, message) {
-        /* 3 */
-    }).on('data', function(event, data, message) {
-        /* 4 */
-    }).on('close', function(event, message) {
-        /* 5 */
-    });
-</script>
 ```
 
 ## Developer Environment
